@@ -38,11 +38,12 @@ android {
         versionName = "ZTCDv1.32.12BETA"
     }
 
+    val releaseKeystoreFile = file("${project.projectDir}/release.keystore")
+
     signingConfigs {
         create("release") {
-            val keystoreFile = file("${project.projectDir}/release.keystore")
-            if (keystoreFile.exists()) {
-                storeFile = keystoreFile
+            if (releaseKeystoreFile.exists()) {
+                storeFile = releaseKeystoreFile
                 storePassword = System.getenv("KEYSTORE_PASSWORD")
                 keyAlias = System.getenv("KEY_ALIAS")
                 keyPassword = System.getenv("KEY_PASSWORD")
@@ -54,8 +55,7 @@ android {
         release {
             isMinifyEnabled = false
             // Only apply signing config if keystore exists
-            val keystoreFile = file("${project.projectDir}/release.keystore")
-            if (keystoreFile.exists()) {
+            if (releaseKeystoreFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
         }

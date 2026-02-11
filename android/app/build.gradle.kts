@@ -34,24 +34,30 @@ android {
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         // Explicitly set versionCode/versionName for this release
-        versionCode = 4
-        versionName = "ZTCD_v1.32.11.beta"
+        versionCode = 5
+        versionName = "ZTCDv1.32.12BETA"
     }
 
     signingConfigs {
         create("release") {
-            // Keystore file will be provided by CI by decoding KEYSTORE_BASE64
-            storeFile = file("${project.projectDir}/release.keystore")
-            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "changeit"
-            keyAlias = System.getenv("KEY_ALIAS") ?: "key"
-            keyPassword = System.getenv("KEY_PASSWORD") ?: "changeit"
+            val keystoreFile = file("${project.projectDir}/release.keystore")
+            if (keystoreFile.exists()) {
+                storeFile = keystoreFile
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
         }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("release")
+            // Only apply signing config if keystore exists
+            val keystoreFile = file("${project.projectDir}/release.keystore")
+            if (keystoreFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
@@ -67,4 +73,25 @@ android {
 
 flutter {
     source = "../.."
+}
+
+tasks.register("renameReleaseApk") {
+    dependsOn("assembleRelease")
+    doLast {
+        val outputDir = file("${project.projectDir}/build/outputs/apk/release")
+        val targetName = "ZTCDv1.32.12BETA.apk"
+        val targetFile = file("${outputDir}/${targetName}")
+        
+        // Find the release APK (signed or unsigned)
+        val releaseApk = outputDir.listFiles()?.firstOrNull { 
+            it.name.matches(Regex("app-release(-unsigned)?\\.apk"))
+        }
+        
+        if (releaseApk != null && releaseApk.exists()) {
+            releaseApk.copyTo(targetFile, overwrite = true)
+            println("Renamed ${releaseApk.name} to ${targetName}")
+        } else {
+            throw GradleException("Release APK not found in ${outputDir}")
+        }
+    }
 }

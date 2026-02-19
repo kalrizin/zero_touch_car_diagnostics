@@ -1,6 +1,5 @@
 Comprehensive multi-platform Flutter app for zero-touch automotive diagnostics using OBD-II, phone sensors, GPS tracking, and AI-powered analysis via Google Gemini 2.5 Pro.
 
-Features
 Core Features
 Multi-transport OBD-II Connection: Bluetooth Classic, USB Serial, and Simulation mode
 Comprehensive PID Support: All generic OBD-II Mode 01 PIDs (50+ sensors)
@@ -21,7 +20,7 @@ Flutter SDK (3.10.4+)
 Android device with:
 Bluetooth Classic or USB-OTG support
 GPS/Location services
-Accelerometer and gyroscope
+Accelerometer and gyroscope phone sensor input
 Google Gemini API key (free tier available at Google AI Studio)
 Google Maps API key (for map display)
 Setup

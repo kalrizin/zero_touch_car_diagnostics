@@ -1,4 +1,10 @@
 name: Dart
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Flutter CI
 
 on:
   push:
@@ -13,17 +19,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Set up Java for Android builds
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # Set up Flutter
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.16.0'
+          flutter-version: '3.24.0'
           channel: 'stable'
 
+      # Install Flutter dependencies
       - name: Install dependencies
         run: flutter pub get
 
+      # Verify formatting
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+        continue-on-error: true
+
+      # Analyze project source
       - name: Analyze project source
         run: flutter analyze
 
+      # Run Flutter tests
       - name: Run tests
         run: flutter test

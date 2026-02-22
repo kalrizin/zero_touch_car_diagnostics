@@ -54,6 +54,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+            isShrinkResources = false
             // Only apply signing config if keystore exists
             if (releaseKeystoreFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")

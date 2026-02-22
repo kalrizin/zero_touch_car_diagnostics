@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -51,3 +51,17 @@ jobs:
         with:
           name: ZTCDv1.32.12BETA
           path: android/app/build/outputs/apk/release/ZTCDv1.32.12BETA.apk
+
+      - name: Extract release tag from branch name
+        id: release_tag
+        run: |
+          REF="${{ github.ref_name }}"
+          echo "tag=${REF#release/}" >> $GITHUB_OUTPUT
+
+      - name: Publish pre-release to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_tag.outputs.tag }}
+          name: ZTCD ${{ steps.release_tag.outputs.tag }}
+          prerelease: true
+          files: android/app/build/outputs/apk/release/ZTCDv1.32.12BETA.apk

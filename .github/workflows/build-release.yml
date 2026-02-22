@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch: {}
 
 jobs:
@@ -80,9 +83,11 @@ jobs:
           path: ${{ steps.version.outputs.apk_name }}
 
       - name: Publish pre-release to GitHub Releases
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: ZTCD ${{ steps.version.outputs.tag }}
           prerelease: true
+          generate_release_notes: true
           files: ${{ steps.version.outputs.apk_name }}

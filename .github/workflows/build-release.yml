@@ -1,10 +1,9 @@
-name: Build and Upload Release APK
+name: Build and Publish Release APK
 
 on:
   push:
     branches:
       - main
-      - '**'
   pull_request:
     branches:
       - main
@@ -14,7 +13,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -44,15 +43,51 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Extract version from pubspec.yaml
+        id: version
+        run: |
+          set -e
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version:[[:space:]]*//' | tr -d ' ')
+          if [ -z "$VERSION" ]; then
+            echo "ERROR: Could not extract version from pubspec.yaml" >&2
+            exit 1
+          fi
+          BUILD_NAME=$(echo "$VERSION" | cut -d'+' -f1)
+          if echo "$VERSION" | grep -q '+'; then
+            BUILD_NUMBER=$(echo "$VERSION" | cut -d'+' -f2)
+          else
+            BUILD_NUMBER=1
+          fi
+          TAG="v${BUILD_NAME}"
+          APK_NAME="ZTCD_v${BUILD_NAME}.apk"
+          echo "build_name=${BUILD_NAME}" >> $GITHUB_OUTPUT
+          echo "build_number=${BUILD_NUMBER}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "apk_name=${APK_NAME}" >> $GITHUB_OUTPUT
+
       - name: Build release APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: flutter build apk --release --build-name="ZTCD_v1.32.11.beta" --build-number=4
+        run: flutter build apk --release --build-name="${{ steps.version.outputs.build_name }}" --build-number="${{ steps.version.outputs.build_number }}"
+
+      - name: Rename APK
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk "${{ steps.version.outputs.apk_name }}"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ZTCD_v1.32.11.beta.apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: ${{ steps.version.outputs.apk_name }}
+          path: ${{ steps.version.outputs.apk_name }}
+
+      - name: Publish pre-release to GitHub Releases
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ZTCD ${{ steps.version.outputs.tag }}
+          prerelease: true
+          generate_release_notes: true
+          files: ${{ steps.version.outputs.apk_name }}

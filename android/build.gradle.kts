@@ -18,6 +18,7 @@ subprojects {
     afterEvaluate {
         if (pluginManager.hasPlugin("com.android.library")) {
             extensions.getByType<com.android.build.gradle.LibraryExtension>().apply {
+                compileSdk = 36
                 if (namespace == null) {
                     val manifestFile = sourceSets.getByName("main").manifest.srcFile
                     if (manifestFile.exists()) {

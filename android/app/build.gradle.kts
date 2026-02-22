@@ -5,16 +5,6 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-subprojects {
-    afterEvaluate {
-        if (pluginManager.hasPlugin("com.android.library")) {
-            extensions.getByType<com.android.build.gradle.LibraryExtension>().apply {
-                namespace = namespace ?: "com.example.flutter.plugins"
-            }
-        }
-    }
-}
-
 android {
     namespace = "com.example.zero_touch_car_diagnostics"
     compileSdk = 36

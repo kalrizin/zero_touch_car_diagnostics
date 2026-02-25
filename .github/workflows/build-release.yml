@@ -76,14 +76,15 @@ jobs:
         id: find_apk
         run: |
           echo "PWD: $(pwd)"
-          echo "Listing android build outputs..."
-          ls -la android/app/build/outputs/flutter-apk || true
+          echo "Listing flutter-apk build outputs..."
+          ls -la build/app/outputs/flutter-apk || true
           ls -la android/app/build/outputs/apk/release || true
-          APK_PATH=$(find android -type f -path '*/build/*' -name '*.apk' | sort | tail -n1 || true)
+          APK_PATH=$(find build android -type f -name '*.apk' 2>/dev/null | sort | tail -n1)
           echo "Found APK_PATH=$APK_PATH"
           if [ -z "$APK_PATH" ]; then
             echo "No APK found in expected locations" >&2
-            ls -R android || true
+            ls -R build/app/outputs || true
+            ls -R android/app/build/outputs || true
             exit 2
           fi
           echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT

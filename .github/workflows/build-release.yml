@@ -72,22 +72,71 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: flutter build apk --release --build-name="${{ steps.version.outputs.build_name }}" --build-number="${{ steps.version.outputs.build_number }}"
 
-      - name: Rename APK
+      - name: Show build outputs and locate APK
+        id: find_apk
         run: |
-          cp build/app/outputs/flutter-apk/app-release.apk "${{ steps.version.outputs.apk_name }}"
+          echo "PWD: $(pwd)"
+          echo "Listing flutter-apk build outputs..."
+          ls -la build/app/outputs/flutter-apk || true
+          ls -la android/app/build/outputs/apk/release || true
+          APK_PATH=$(find build android -type f -name '*.apk' 2>/dev/null | sort | tail -n1)
+          echo "Found APK_PATH=$APK_PATH"
+          if [ -z "$APK_PATH" ]; then
+            echo "No APK found in expected locations" >&2
+            ls -R build/app/outputs || true
+            ls -R android/app/build/outputs || true
+            exit 2
+          fi
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
 
-      - name: Upload APK artifact
+      - name: Ensure version outputs (fallback)
+        id: version_fallback
+        if: ${{ steps.version.outputs.tag == '' || steps.version.outputs.tag == null }}
+        run: |
+          echo "No existing version step found or outputs empty; extracting from pubspec.yaml"
+          VERSION=$(grep '^version:' pubspec.yaml | head -n1 | sed 's/version: *//; s/+.*//; s/\r//')
+          if [ -z "$VERSION" ]; then
+            echo "ERROR: could not extract version from pubspec.yaml" >&2
+            exit 1
+          fi
+          TAG="v$VERSION"
+          APK_NAME="ZTCD_${TAG}.apk"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
+
+      - name: Copy APK to deterministic name and compute checksum
+        id: checksum
+        run: |
+          # Prefer outputs from existing version step if present
+          TAG=${{ steps.version.outputs.tag || steps.version_fallback.outputs.tag || '' }}
+          APK_NAME=${{ steps.version.outputs.apk_name || steps.version_fallback.outputs.apk_name || '' }}
+          if [ -z "$APK_NAME" ]; then
+            TAG=${TAG:-v0.0.0}
+            APK_NAME="ZTCD_${TAG}.apk"
+          fi
+          echo "Using TAG=$TAG APK_NAME=$APK_NAME"
+          APK_PATH=${{ steps.find_apk.outputs.apk_path }}
+          cp "$APK_PATH" "$APK_NAME"
+          sha256sum "$APK_NAME" | tee "$APK_NAME.sha256"
+          echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
+          echo "apk_sha256=$(cut -d' ' -f1 "$APK_NAME.sha256")" >> $GITHUB_OUTPUT
+
+      - name: Upload APK and checksum as artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.version.outputs.apk_name }}
-          path: ${{ steps.version.outputs.apk_name }}
+          name: ${{ steps.checksum.outputs.apk_name }}
+          path: |
+            ${{ steps.checksum.outputs.apk_name }}
+            ${{ steps.checksum.outputs.apk_name }}.sha256
 
       - name: Publish pre-release to GitHub Releases
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: ZTCD ${{ steps.version.outputs.tag }}
+          tag_name: ${{ steps.version.outputs.tag || steps.version_fallback.outputs.tag }}
+          name: ZTCD ${{ steps.version.outputs.tag || steps.version_fallback.outputs.tag }}
           prerelease: true
           generate_release_notes: true
-          files: ${{ steps.version.outputs.apk_name }}
+          files: |
+            ${{ steps.checksum.outputs.apk_name }}
+            ${{ steps.checksum.outputs.apk_name }}.sha256

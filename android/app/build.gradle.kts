@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.example.zero_touch_car_diagnostics"
     compileSdk = 36
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -24,8 +24,8 @@ android {
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         // Explicitly set versionCode/versionName for this release
-        versionCode = 5
-        versionName = "ZTCDv1.32.12BETA"
+        versionCode = 6
+        versionName = "ZTCDv.1.3.4BETA"
     }
 
     val releaseKeystoreFile = file("${project.projectDir}/release.keystore")
@@ -70,7 +70,7 @@ tasks.register("renameReleaseApk") {
     dependsOn("assembleRelease")
     doLast {
         val outputDir = file("${project.projectDir}/build/outputs/apk/release")
-        val targetName = "ZTCDv1.32.12BETA.apk"
+        val targetName = "ZTCDv.1.3.4BETA.apk"
         val targetFile = file("${outputDir}/${targetName}")
         
         // Find the release APK (signed or unsigned)

@@ -69,7 +69,7 @@ flutter {
 tasks.register("renameReleaseApk") {
     dependsOn("assembleRelease")
     doLast {
-        val outputDir = file("${project.projectDir}/build/outputs/apk/release")
+        val outputDir = project.layout.buildDirectory.dir("outputs/apk/release").get().asFile
         val targetName = "ZTCDv.1.3.4BETA.apk"
         val targetFile = file("${outputDir}/${targetName}")
         
